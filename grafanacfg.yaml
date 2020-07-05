@@ -1,0 +1,61 @@
+#To Expose Deployment In Grafana
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  labels:
+    app: graf
+spec:
+  ports:
+    - port: 3000
+  selector:
+    app: graf
+  type: NodePort
+---  
+#To Create a PVC to make Data Persistent of Pod
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-pvc
+spec:
+  accessModes:
+   - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi   
+
+
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-deploy
+  labels:
+    app: graf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: graf
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: graf
+    spec:
+      containers:
+      - image: vimal13/grafana
+        name: graf
+        ports:
+        - containerPort: 3000
+          name: graf
+        volumeMounts:
+          - name: grafana-vol
+            mountPath: /var/lib/grafana
+      volumes:
+      - name: grafana-vol
+        persistentVolumeClaim:
+          claimName: grafana-pvc  
