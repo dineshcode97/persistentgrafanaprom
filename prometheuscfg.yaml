@@ -1,0 +1,88 @@
+#TO Expose Prometheus Pod
+apiVersion: v1
+kind: Service
+metadata:
+  name: prom-service
+  labels:
+    app: prom
+spec:
+  ports:
+    - port: 9090
+  selector:
+    app: prom
+  type: NodePort
+---
+
+#A Config map To make Data Persistent of Prometheus 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prom-config
+  labels:
+    app: prom
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval:     15s 
+      evaluation_interval: 15s 
+    scrape_configs:
+     - job_name: 'prometheus'
+       static_configs:
+       - targets: ['localhost:9090']
+     - job_name: 'nodex1'
+       static_configs:
+       - targets: ['192.168.99.101:9100']
+---       
+
+#PVC to make Data Persistent of Prometheus
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prom-vol
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---   
+
+
+#To Create a Deployment From Prometheus Image
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prom-deploy
+  labels:
+    app: prom
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prom
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: prom
+    spec:
+      containers:
+      - image: vimal13/prometheus
+        name: prom
+        ports:
+        - containerPort: 9090
+          name: prom
+        volumeMounts:
+        - name: prom-config
+          mountPath: /etc/prometheus/prometheus.yml
+          subPath: prometheus.yml
+        - name: prom-vol
+          mountPath: /prometheus/data
+      volumes:
+        - name: prom-config
+          configMap:
+            name: prom-config
+        - name: prom-vol
+          persistentVolumeClaim:
+            claimName: prom-vol
