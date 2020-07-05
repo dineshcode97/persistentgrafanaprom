@@ -5,6 +5,7 @@ There are three file in this repository
 1. grafancfg.yaml
 2. prometheuscfg.yaml
 3. kustomization.yaml
+
 In grafancfg.yaml file all the resoursces like service,pvc,deployment are created for Grafana
 
 In prometheuscfg.yaml file all the resoursces like configmap,service,pvc,deployment are created for Prometheus
